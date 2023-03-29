@@ -1,0 +1,50 @@
+name: TinyGo Build and Release
+
+on:
+  create:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install TinyGo
+        run: |
+          wget https://github.com/tinygo-org/tinygo/releases/download/v0.22.0/tinygo0.22.0.linux-amd64.tar.gz
+          tar -xzf tinygo0.22.0.linux-amd64.tar.gz
+          sudo mv tinygo0.22.0.linux-amd64/tinygo /usr/local/bin/
+          sudo mv tinygo0.22.0.linux-amd64/tinygo.wasm /usr/local/bin/
+          sudo mv tinygo0.22.0.linux-amd64/tools /usr/local/bin/
+
+      - name: Install Binaryen
+        run: |
+          sudo apt-get update
+          sudo apt-get install binaryen
+
+      - name: Build with TinyGo
+        run: |
+          tinygo build -o main.wasm -target wasm ./path/to/your/main.go
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload WASM to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: main.wasm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
