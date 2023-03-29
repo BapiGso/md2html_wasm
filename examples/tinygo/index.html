@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script src="wasm_exec.js"></script>
+    <script>
+        'use strict';
+
+        const WASM_URL = 'wasm.wasm';
+
+        var wasm;
+
+        function init() {
+            const go = new Go();
+            if ('instantiateStreaming' in WebAssembly) {
+                WebAssembly.instantiateStreaming(fetch(WASM_URL), go.importObject).then(function (obj) {
+                    wasm = obj.instance;
+                    go.run(wasm);
+                })
+            } else {
+                fetch(WASM_URL).then(resp =>
+                    resp.arrayBuffer()
+                ).then(bytes =>
+                    WebAssembly.instantiate(bytes, go.importObject).then(function (obj) {
+                        wasm = obj.instance;
+                        go.run(wasm);
+                    })
+                )
+            }
+        }
+
+        init();
+
+        function convert() {
+            const input = String(document.getElementById("input").value);
+            const output = window.convertMDToHTML(input);
+            document.getElementById("output").innerHTML = output;
+        }
+    </script>
+</head>
+<body>
+<h1>Markdown to HTML Converter</h1>
+<textarea id="input" rows="10" cols="50"></textarea>
+<br />
+<button onclick="convert()">Convert</button>
+<hr />
+<div id="output"></div>
+</body>
+</html>
